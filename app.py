@@ -1,3 +1,32 @@
+import streamlit as st
+import streamlit.components.v1 as components
+
+# Cấu hình giao diện trang Streamlit
+st.set_page_config(
+    page_title="8 Ball Pool Pro - Streamlit Edition",
+    page_icon="🎱",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# Ẩn bớt thanh menu mặc định của Streamlit cho giống game app chuyên nghiệp
+hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .block-container {
+        padding-top: 0rem;
+        padding-bottom: 0rem;
+        padding-left: 0rem;
+        padding-right: 0rem;
+    }
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+# Mã nguồn HTML/JS hoàn chỉnh của Game Bida được nhúng vào Streamlit Component
+game_html = """
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -55,6 +84,7 @@
         h1, h2 {
             margin-bottom: 20px;
             letter-spacing: 1px;
+            color: var(--text-main);
         }
 
         button {
@@ -531,128 +561,4 @@
                 });
             });
 
-            // Xử lý va chạm đàn hồi giữa các bi chuẩn xác hơn
-            for (let i = 0; i < balls.length; i++) {
-                for (let j = i + 1; j < balls.length; j++) {
-                    let b1 = balls[i], b2 = balls[j];
-                    if (!b1.active || !b2.active) continue;
-                    let dx = b2.x - b1.x;
-                    let dy = b2.y - b1.y;
-                    let dist = Math.hypot(dx, dy);
-                    let minDist = b1.radius + b2.radius;
-                    if (dist < minDist) {
-                        let angle = Math.atan2(dy, dx);
-                        let overlap = 0.5 * (minDist - dist);
-                        b1.x -= overlap * Math.cos(angle);
-                        b1.y -= overlap * Math.sin(angle);
-                        b2.x += overlap * Math.cos(angle);
-                        b2.y += overlap * Math.sin(angle);
-
-                        // Đổi vận tốc đàn hồi vật lý
-                        let ax = Math.cos(angle);
-                        let ay = Math.sin(angle);
-                        let kx = b1.vx - b2.vx;
-                        let ky = b1.vy - b2.vy;
-                        let p = 2 * (ax * kx + ay * ky) / 2;
-                        b1.vx -= p * ax;
-                        b1.vy -= p * ay;
-                        b2.vx += p * ax;
-                        b2.vy += p * ay;
-                    }
-                }
-            }
-
-            if (!moving && !isAiming) {
-                isAiming = true;
-                currentTurn = currentTurn === 1 ? 2 : 1;
-                document.getElementById('turn-indicator').innerText = `Lượt: ${currentTurn === 1 ? gameConfig.p1Name : gameConfig.p2Name}`;
-
-                if (gameConfig.mode === 'ai' && currentTurn === 2) {
-                    setTimeout(makeAiShot, 800);
-                }
-            }
-        }
-
-        function makeAiShot() {
-            if (!cueBall.active) return;
-            let targetBall = balls.find(b => b.active && b.type !== 'cue');
-            if (targetBall) {
-                let dx = targetBall.x - cueBall.x;
-                let dy = targetBall.y - cueBall.y;
-                let angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * (gameConfig.aiDiff === 'easy' ? 0.3 : 0.1);
-                let power = gameConfig.aiDiff === 'easy' ? 6 : (gameConfig.aiDiff === 'medium' ? 10 : 14);
-                cueBall.vx = Math.cos(angle) * power;
-                cueBall.vy = Math.sin(angle) * power;
-                isAiming = false;
-            }
-        }
-
-        function renderGame() {
-            if (!ctx) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#3b2219';
-            ctx.fillRect(30, 30, 840, 390);
-
-            ctx.fillStyle = '#0b4f26';
-            ctx.fillRect(tableBounds.x, tableBounds.y, tableBounds.width, tableBounds.height);
-
-            pockets.forEach(p => {
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fillStyle = '#020617';
-                ctx.fill();
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = '#1e293b';
-                ctx.stroke();
-            });
-
-            if (isAiming && cueBall && cueBall.active && (currentTurn === 1 || gameConfig.mode === 'pvp')) {
-                ctx.beginPath();
-                ctx.moveTo(cueBall.x, cueBall.y);
-                ctx.lineTo(cueBall.x + Math.cos(aimAngle) * 150, cueBall.y + Math.sin(aimAngle) * 150);
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 4]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                let activeCueObj = cuesList.find(c => c.id === playerData.equippedCue) || cuesList[0];
-                ctx.save();
-                ctx.translate(cueBall.x, cueBall.y);
-                ctx.rotate(aimAngle + Math.PI);
-                ctx.fillStyle = activeCueObj.color;
-                ctx.fillRect(25, -4, 180, 8);
-                ctx.fillStyle = '#d97706';
-                ctx.fillRect(205, -3, 25, 6);
-                ctx.restore();
-            }
-
-            balls.forEach(ball => {
-                if (!ball.active) return;
-                ctx.beginPath();
-                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-                ctx.fillStyle = ball.color;
-                ctx.fill();
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = '#000';
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.arc(ball.x - 3, ball.y - 3, 3, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                ctx.fill();
-
-                if (ball.number > 0) {
-                    ctx.fillStyle = '#ffffff';
-                    if (ball.number === 8) ctx.fillStyle = '#f59e0b';
-                    ctx.font = 'bold 10px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(ball.number, ball.x, ball.y);
-                }
-            });
-        }
-    </script>
-</body>
-</html>
+            for (let
