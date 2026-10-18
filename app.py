@@ -49,10 +49,9 @@
         .screen.hidden {
             opacity: 0;
             pointer-events: none;
-            display: none;
+            display: none !important;
         }
 
-        /* UI Components */
         h1, h2 {
             margin-bottom: 20px;
             letter-spacing: 1px;
@@ -86,7 +85,6 @@
             box-shadow: 0 4px 12px rgba(71, 85, 105, 0.4);
         }
 
-        /* Main Menu / Profile Screen */
         .profile-card {
             background: var(--panel-bg);
             border: 2px solid #334155;
@@ -125,7 +123,6 @@
             font-weight: bold;
         }
 
-        /* Cue Shop Screen */
         .cue-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -164,7 +161,6 @@
             transform: rotate(-30deg);
         }
 
-        /* Game Room Screen */
         #game-screen {
             background: #090d16;
         }
@@ -190,15 +186,12 @@
             gap: 12px;
         }
 
-        .player-hud.active {
-            border-bottom: 2px solid var(--gold);
-        }
-
         .table-container {
             position: relative;
             box-shadow: 0 20px 50px rgba(0,0,0,0.8);
             border-radius: 20px;
             overflow: hidden;
+            margin-top: 50px;
         }
 
         canvas {
@@ -227,7 +220,7 @@
 </head>
 <body>
 
-    <!-- 1. MÀN HÌNH CHỌN NGƯỜI CHƠI & MENU CHÍNH -->
+    <!-- MÀN HÌNH CHÍNH -->
     <div id="main-screen" class="screen">
         <h1>8 BALL POOL PRO</h1>
         <div class="profile-card">
@@ -245,7 +238,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH CHỌN CHẾ ĐỘ & ĐỐI THỦ -->
+    <!-- MÀN HÌNH CHỌN CHẾ ĐỘ -->
     <div id="mode-screen" class="screen hidden">
         <h2>CHỌN CHẾ ĐỘ CHƠI</h2>
         <div class="profile-card" style="width: 420px; text-align: left;">
@@ -278,30 +271,28 @@
         </div>
     </div>
 
-    <!-- 2. MÀN HÌNH CHỌN GẬY (CUE SHOP) -->
+    <!-- MÀN HÌNH CHỌN GẬY -->
     <div id="shop-screen" class="screen hidden">
         <h2>BỘ SƯU TẬP GẬY BIDA</h2>
-        <div class="cue-grid" id="cue-grid-container">
-            <!-- Được render động qua JavaScript -->
-        </div>
+        <div class="cue-grid" id="cue-grid-container"></div>
         <button class="secondary" onclick="backToMain()">QUAY LẠI MENU</button>
     </div>
 
-    <!-- 3. MÀN HÌNH TRẬN ĐẤU BIDA -->
+    <!-- MÀN HÌNH TRẬN ĐẤU -->
     <div id="game-screen" class="screen hidden">
         <div class="game-header">
             <div class="player-hud" id="hud-p1">
                 <span>👤</span>
                 <div>
                     <div id="hud-name-1" style="font-weight: bold; font-size: 14px;">Player 1</div>
-                    <div style="font-size: 12px; color: var(--text-muted);" id="hud-score-1">Bi trơn</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Bida Pro</div>
                 </div>
             </div>
             <div style="font-weight: bold; color: var(--gold);" id="turn-indicator">Lượt: Player 1</div>
             <div class="player-hud" id="hud-p2">
                 <div>
                     <div id="hud-name-2" style="font-weight: bold; font-size: 14px; text-align: right;">Player 2</div>
-                    <div style="font-size: 12px; color: var(--text-muted); text-align: right;" id="hud-score-2">Bi sọc</div>
+                    <div style="font-size: 12px; color: var(--text-muted); text-align: right;">Bida Pro</div>
                 </div>
                 <span>🤖</span>
             </div>
@@ -322,7 +313,6 @@
     </div>
 
     <script>
-        // --- DỮ LIỆU VÀ QUẢN LÝ TRẠNG THÁI (LOCALSTORAGE) ---
         let playerData = JSON.parse(localStorage.getItem('pool_player')) || {
             name: "Bùi Thủ Khoa",
             level: 5,
@@ -344,7 +334,6 @@
             localStorage.setItem('pool_player', JSON.stringify(playerData));
         }
 
-        // --- ĐIỀU HƯỚNG MÀN HÌNH ---
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             document.getElementById(screenId).classList.remove('hidden');
@@ -403,7 +392,6 @@
             backToMain();
         }
 
-        // --- ĐỘNG CƠ GAME BIDA & VẬT LÝ (CANVAS 2D) ---
         let canvas, ctx;
         let gameConfig = { mode: 'ai', aiDiff: 'medium', p1Name: 'Player 1', p2Name: 'AI Bot' };
         let balls = [];
@@ -411,7 +399,7 @@
         let cueBall = null;
         let isAiming = true;
         let aimAngle = 0;
-        let currentTurn = 1; // 1 hoặc 2
+        let currentTurn = 1;
         let tableBounds = { x: 50, y: 50, width: 800, height: 400 };
 
         function startGameSession() {
@@ -430,7 +418,6 @@
             canvas = document.getElementById('poolTable');
             ctx = canvas.getContext('2d');
             
-            // Lắng nghe sự kiện chuột ngắm bắn
             canvas.onmousemove = handleMouseMove;
             canvas.onmousedown = handleMouseDown;
 
@@ -438,7 +425,6 @@
         }
 
         function initTable() {
-            // Thiết lập vị trí 6 lỗ bida chuẩn
             pockets = [
                 { x: tableBounds.x, y: tableBounds.y, radius: 22 },
                 { x: tableBounds.x + tableBounds.width / 2, y: tableBounds.y - 4, radius: 20 },
@@ -451,18 +437,13 @@
 
         function initBalls() {
             balls = [];
-            // Bi cái (Cue Ball)
             cueBall = { x: tableBounds.x + 200, y: tableBounds.y + tableBounds.height / 2, vx: 0, vy: 0, radius: 11, color: '#ffffff', type: 'cue', number: 0, active: true };
             balls.push(cueBall);
 
-            // Xếp bi hình tam giác chuẩn 8-ball
             let startX = tableBounds.x + tableBounds.width - 250;
             let startY = tableBounds.y + tableBounds.height / 2;
             let r = 11;
-            let count = 1;
             
-            // Tạo 15 bi mục tiêu
-            let types = ['solid', 'striped', 'solid', 'striped', 'black', 'striped', 'solid', 'striped', 'solid', 'striped', 'solid', 'striped', 'solid', 'striped', 'solid'];
             let colors = ['#eab308', '#2563eb', '#dc2626', '#7c3aed', '#000000', '#db2777', '#16a34a', '#9333ea', '#ea580c', '#1e40af', '#991b1b', '#581c87', '#9d174d', '#166534', '#374151'];
             
             let index = 0;
@@ -486,7 +467,7 @@
             let rect = canvas.getBoundingClientRect();
             mouseX = e.clientX - rect.left;
             mouseY = e.clientY - rect.top;
-            if (cueBall && cueBall.active) {
+            if (cueBall && cueBall.active && isAiming) {
                 let dx = mouseX - cueBall.x;
                 let dy = mouseY - cueBall.y;
                 aimAngle = Math.atan2(dy, dx);
@@ -494,14 +475,14 @@
         }
 
         function handleMouseDown() {
-            if (isAiming && cueBall && cueBall.active) {
+            if (isAiming && cueBall && cueBall.active && currentTurn === 1) {
                 executeShot();
             }
         }
 
         function executeShot() {
             if (!isAiming || !cueBall.active) return;
-            let power = document.getElementById('shotPower').value * 0.8;
+            let power = document.getElementById('shotPower').value * 0.9;
             cueBall.vx = Math.cos(aimAngle) * power;
             cueBall.vy = Math.sin(aimAngle) * power;
             isAiming = false;
@@ -520,7 +501,7 @@
                 
                 ball.x += ball.vx;
                 ball.y += ball.vy;
-                ball.vx *= 0.985; // Ma sát bàn
+                ball.vx *= 0.985;
                 ball.vy *= 0.985;
 
                 if (Math.abs(ball.vx) < 0.05) ball.vx = 0;
@@ -528,19 +509,16 @@
 
                 if (ball.vx !== 0 || ball.vy !== 0) moving = true;
 
-                // Va chạm thành bàn
                 let rb = ball.radius;
                 if (ball.x - rb < tableBounds.x) { ball.x = tableBounds.x + rb; ball.vx *= -1; }
                 if (ball.x + rb > tableBounds.x + tableBounds.width) { ball.x = tableBounds.x + tableBounds.width - rb; ball.vx *= -1; }
                 if (ball.y - rb < tableBounds.y) { ball.y = tableBounds.y + rb; ball.vy *= -1; }
                 if (ball.y + rb > tableBounds.y + tableBounds.height) { ball.y = tableBounds.y + tableBounds.height - rb; ball.vy *= -1; }
 
-                // Kiểm tra rơi lỗ
                 pockets.forEach(p => {
                     let dist = Math.hypot(ball.x - p.x, ball.y - p.y);
                     if (dist < p.radius) {
                         if (ball.type === 'cue') {
-                            // Bi cái rơi xuống lỗ -> đặt lại vị trí giữa bàn
                             ball.x = tableBounds.x + 200;
                             ball.y = tableBounds.y + tableBounds.height / 2;
                             ball.vx = 0; ball.vy = 0;
@@ -553,7 +531,7 @@
                 });
             });
 
-            // Va chạm giữa các bi
+            // Xử lý va chạm đàn hồi giữa các bi chuẩn xác hơn
             for (let i = 0; i < balls.length; i++) {
                 for (let j = i + 1; j < balls.length; j++) {
                     let b1 = balls[i], b2 = balls[j];
@@ -564,17 +542,22 @@
                     let minDist = b1.radius + b2.radius;
                     if (dist < minDist) {
                         let angle = Math.atan2(dy, dx);
-                        let tx = b1.x + Math.cos(angle) * minDist;
-                        let ty = b1.y + Math.sin(angle) * minDist;
-                        let ax = (tx - b2.x) * 0.5;
-                        let ay = (ty - b2.y) * 0.5;
-                        b1.x -= ax; b1.y -= ay;
-                        b2.x += ax; b2.y += ay;
-                        
-                        // Đổi vận tốc đàn hồi đơn giản
-                        let tempVx = b1.vx; let tempVy = b1.vy;
-                        b1.vx = b2.vx * 0.9; b1.vy = b2.vy * 0.9;
-                        b2.vx = tempVx * 0.9; b2.vy = tempVy * 0.9;
+                        let overlap = 0.5 * (minDist - dist);
+                        b1.x -= overlap * Math.cos(angle);
+                        b1.y -= overlap * Math.sin(angle);
+                        b2.x += overlap * Math.cos(angle);
+                        b2.y += overlap * Math.sin(angle);
+
+                        // Đổi vận tốc đàn hồi vật lý
+                        let ax = Math.cos(angle);
+                        let ay = Math.sin(angle);
+                        let kx = b1.vx - b2.vx;
+                        let ky = b1.vy - b2.vy;
+                        let p = 2 * (ax * kx + ay * ky) / 2;
+                        b1.vx -= p * ax;
+                        b1.vy -= p * ay;
+                        b2.vx += p * ax;
+                        b2.vy += p * ay;
                     }
                 }
             }
@@ -584,7 +567,6 @@
                 currentTurn = currentTurn === 1 ? 2 : 1;
                 document.getElementById('turn-indicator').innerText = `Lượt: ${currentTurn === 1 ? gameConfig.p1Name : gameConfig.p2Name}`;
 
-                // Nếu là lượt AI và chơi chế độ AI
                 if (gameConfig.mode === 'ai' && currentTurn === 2) {
                     setTimeout(makeAiShot, 800);
                 }
@@ -593,13 +575,12 @@
 
         function makeAiShot() {
             if (!cueBall.active) return;
-            // AI chọn góc bắn đơn giản nhắm vào bi mục tiêu đầu tiên còn sống
             let targetBall = balls.find(b => b.active && b.type !== 'cue');
             if (targetBall) {
                 let dx = targetBall.x - cueBall.x;
                 let dy = targetBall.y - cueBall.y;
                 let angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * (gameConfig.aiDiff === 'easy' ? 0.3 : 0.1);
-                let power = gameConfig.aiDiff === 'easy' ? 6 : (gameConfig.aiDiff === 'medium' ? 10 : 15);
+                let power = gameConfig.aiDiff === 'easy' ? 6 : (gameConfig.aiDiff === 'medium' ? 10 : 14);
                 cueBall.vx = Math.cos(angle) * power;
                 cueBall.vy = Math.sin(angle) * power;
                 isAiming = false;
@@ -610,22 +591,12 @@
             if (!ctx) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Vẽ viền băng bàn bida (Khung gỗ cao cấp)
             ctx.fillStyle = '#3b2219';
             ctx.fillRect(30, 30, 840, 390);
 
-            // Vẽ mặt vải bàn bida xanh đậm đặc trưng
             ctx.fillStyle = '#0b4f26';
             ctx.fillRect(tableBounds.x, tableBounds.y, tableBounds.width, tableBounds.height);
 
-            // Hiệu ứng ánh sáng bóng đổ nhẹ cho bàn
-            let grad = ctx.createRadialGradient(450, 225, 50, 450, 225, 400);
-            grad.addColorStop(0, 'rgba(255,255,255,0.05)');
-            grad.addColorStop(1, 'rgba(0,0,0,0.4)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(tableBounds.x, tableBounds.y, tableBounds.width, tableBounds.height);
-
-            // Vẽ 6 lỗ bida
             pockets.forEach(p => {
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
@@ -636,8 +607,7 @@
                 ctx.stroke();
             });
 
-            // Vẽ đường ngắm (Aiming Guide) khi đến lượt người chơi
-            if (isAiming && cueBall && cueBall.active && currentTurn === 1) {
+            if (isAiming && cueBall && cueBall.active && (currentTurn === 1 || gameConfig.mode === 'pvp')) {
                 ctx.beginPath();
                 ctx.moveTo(cueBall.x, cueBall.y);
                 ctx.lineTo(cueBall.x + Math.cos(aimAngle) * 150, cueBall.y + Math.sin(aimAngle) * 150);
@@ -647,19 +617,17 @@
                 ctx.stroke();
                 ctx.setLineDash([]);
 
-                // Vẽ gậy bida đang trang bị hướng theo góc ngắm
                 let activeCueObj = cuesList.find(c => c.id === playerData.equippedCue) || cuesList[0];
                 ctx.save();
                 ctx.translate(cueBall.x, cueBall.y);
                 ctx.rotate(aimAngle + Math.PI);
                 ctx.fillStyle = activeCueObj.color;
-                ctx.fillRect(25, -4, 180, 8); // Thân gậy
+                ctx.fillRect(25, -4, 180, 8);
                 ctx.fillStyle = '#d97706';
-                ctx.fillRect(205, -3, 25, 6); // Đầu gậy
+                ctx.fillRect(205, -3, 25, 6);
                 ctx.restore();
             }
 
-            // Vẽ các viên bi
             balls.forEach(ball => {
                 if (!ball.active) return;
                 ctx.beginPath();
@@ -670,13 +638,11 @@
                 ctx.strokeStyle = '#000';
                 ctx.stroke();
 
-                // Hiệu ứng bóng sáng (Highlight) trên viên bi
                 ctx.beginPath();
                 ctx.arc(ball.x - 3, ball.y - 3, 3, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
                 ctx.fill();
 
-                // Số trên bi (nếu không phải bi cái)
                 if (ball.number > 0) {
                     ctx.fillStyle = '#ffffff';
                     if (ball.number === 8) ctx.fillStyle = '#f59e0b';
