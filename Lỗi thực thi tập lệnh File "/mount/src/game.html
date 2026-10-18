@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8 Ball Pool Pro</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --gold: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .screen { position: absolute; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); transition: opacity 0.3s ease; z-index: 10; }
+        .screen.hidden { opacity: 0; pointer-events: none; display: none !important; }
+        h1, h2 { margin-bottom: 20px; letter-spacing: 1px; color: var(--text-main); }
+        button { background: linear-gradient(135deg, var(--accent-color), var(--accent-hover)); color: white; border: none; padding: 12px 28px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); transition: all 0.2s ease; margin: 8px; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6); }
+        button.secondary { background: #475569; box-shadow: 0 4px 12px rgba(71, 85, 105, 0.4); }
+        .profile-card { background: var(--panel-bg); border: 2px solid #334155; border-radius: 16px; padding: 24px; width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); margin-bottom: 20px; }
+        .avatar-container { width: 90px; height: 90px; border-radius: 50%; background: #334155; margin: 0 auto 12px; display: flex; justify-content: center; align-items: center; font-size: 36px; border: 3px solid var(--gold); }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; font-size: 14px; color: var(--text-muted); }
+        .stats-grid span { color: var(--text-main); font-weight: bold; }
+        .cue-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 700px; margin-bottom: 20px; }
+        .cue-item { background: var(--panel-bg); border: 2px solid #334155; border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .cue-item.selected { border-color: var(--gold); background: rgba(245, 158, 11, 0.1); }
+        .cue-preview { height: 60px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+        .cue-stick-icon { width: 100px; height: 8px; border-radius: 4px; transform: rotate(-30deg); }
+        #game-screen { background: #090d16; }
+        .game-header { position: absolute; top: 15px; width: 95%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.85); padding: 10px 20px; border-radius: 12px; border: 1px solid #334155; z-index: 20; }
+        .player-hud { display: flex; align-items: center; gap: 12px; }
+        .table-container { position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.8); border-radius: 20px; overflow: hidden; margin-top: 50px; }
+        canvas { display: block; background: #0b4f26; }
+        .control-panel { position: absolute; bottom: 15px; display: flex; gap: 15px; z-index: 20; }
+        .power-slider-container { background: rgba(30, 41, 59, 0.9); padding: 10px 20px; border-radius: 10px; display: flex; align-items: center; gap: 10px; border: 1px solid #334155; }
+    </style>
+</head>
+<body>
+    <div id="main-screen" class="screen">
+        <h1>8 BALL POOL PRO</h1>
+        <div class="profile-card">
+            <div class="avatar-container">🎱</div>
+            <h3 id="display-name">Bùi Thủ Khoa</h3>
+            <p style="color: var(--gold); font-size: 14px; margin-top: 4px;">Cấp độ: <span id="display-level">5</span></p>
+            <div class="stats-grid">
+                <div>Xu: <span id="display-coins">1500</span></div>
+                <div>Thắng/Thua: <span id="display-record">12/4</span></div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="openModeSelect()">CHƠI NGAY</button>
+            <button class="secondary" onclick="openCueShop()">BỘ SƯU TẬP GẬY</button>
+        </div>
+    </div>
+
+    <div id="mode-screen" class="screen hidden">
+        <h2>CHỌN CHẾ ĐỘ CHƠI</h2>
+        <div class="profile-card" style="width: 420px; text-align: left;">
+            <label style="font-size: 14px; color: var(--text-muted);">Tên người chơi 1:</label>
+            <input type="text" id="p1-name-input" value="Player 1" style="width: 100%; padding: 8px; margin: 6px 0 15px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px;">
+            <label style="font-size: 14px; color: var(--text-muted);">Chọn Chế Độ:</label>
+            <select id="game-mode-select" onchange="toggleModeOptions()" style="width: 100%; padding: 8px; margin: 6px 0 15px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px;">
+                <option value="ai">Đấu với Máy (AI)</option>
+                <option value="pvp">2 Người chơi (Chung máy)</option>
+            </select>
+            <div id="ai-options">
+                <label style="font-size: 14px; color: var(--text-muted);">Độ khó AI:</label>
+                <select id="ai-difficulty" style="width: 100%; padding: 8px; margin: 6px 0 15px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px;">
+                    <option value="easy">Dễ (Easy)</option>
+                    <option value="medium" selected>Trung bình (Medium)</option>
+                    <option value="hard">Khó (Hard)</option>
+                </select>
+            </div>
+            <div id="p2-options" style="display:none;">
+                <label style="font-size: 14px; color: var(--text-muted);">Tên người chơi 2:</label>
+                <input type="text" id="p2-name-input" value="Player 2" style="width: 100%; padding: 8px; margin: 6px 0 15px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px;">
+            </div>
+        </div>
+        <div>
+            <button class="secondary" onclick="backToMain()">QUAY LẠI</button>
+            <button onclick="startGameSession()">BẮT ĐẦU TRẬN</button>
+        </div>
+    </div>
+
+    <div id="shop-screen" class="screen hidden">
+        <h2>BỘ SƯU TẬP GẬY BIDA</h2>
+        <div class="cue-grid" id="cue-grid-container"></div>
+        <button class="secondary" onclick="backToMain()">QUAY LẠI MENU</button>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+        <div class="game-header">
+            <div class="player-hud">
+                <span>👤</span>
+                <div>
+                    <div id="hud-name-1" style="font-weight: bold; font-size: 14px;">Player 1</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Bida Pro</div>
+                </div>
+            </div>
+            <div style="font-weight: bold; color: var(--gold);" id="turn-indicator">Lượt: Player 1</div>
+            <div class="player-hud">
+                <div>
+                    <div id="hud-name-2" style="font-weight: bold; font-size: 14px; text-align: right;">Player 2</div>
+                    <div style="font-size: 12px; color: var(--text-muted); text-align: right;">Bida Pro</div>
+                </div>
+                <span>🤖</span>
+            </div>
+        </div>
+        <div class="table-container">
+            <canvas id="poolTable" width="900" height="450"></canvas>
+        </div>
+        <div class="control-panel">
+            <div class="power-slider-container">
+                <span>Lực đánh:</span>
+                <input type="range" id="shotPower" min="1" max="20" value="10">
+                <button onclick="executeShot()">ĐÁNH</button>
+            </div>
+            <button class="secondary" onclick="returnToMenu()">THOÁT</button>
+        </div>
+    </div>
+
+    <script>
+        let playerData = JSON.parse(localStorage.getItem('pool_player')) || { name: "Bùi Thủ Khoa", level: 5, coins: 1500, wins: 12, losses: 4, equippedCue: "cue_classic" };
+        const cuesList = [
+            { id: "cue_classic", name: "Gậy Gỗ Cổ Điển", color: "#b45309", owned: true, power: 5, desc: "Gậy tiêu chuẩn truyền thống ổn định." },
+            { id: "cue_black", name: "Hắc Long (Đen Cao Cấp)", color: "#1e293b", owned: true, power: 7, desc: "Thiết kế sắc sảo, lực đánh mạnh mẽ." },
+            { id: "cue_blue", name: "Đại Dương Xanh", color: "#0284c7", owned: true, power: 6, desc: "Cảm giác đường cơ mượt mà, chính xác." },
+            { id: "cue_red", name: "Lửa Đỏ Rực Lửa", color: "#dc2626", owned: true, power: 8, desc: "Tối ưu hóa lực phá bóng cực mạnh." },
+            { id: "cue_gold", name: "Hoàng Kim Vương Giả", color: "#d97706", owned: false, power: 10, desc: "Siêu gậy đẳng cấp dành cho bậc thầy." }
+        ];
+
+        function saveUserData() { localStorage.setItem('pool_player', JSON.stringify(playerData)); }
+        function showScreen(screenId) { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById(screenId).classList.remove('hidden'); }
+        function backToMain() {
+            document.getElementById('display-name').innerText = playerData.name;
+            document.getElementById('display-level').innerText = playerData.level;
+            document.getElementById('display-coins').innerText = playerData.coins;
+            document.getElementById('display-record').innerText = `${playerData.wins}/${playerData.losses}`;
+            showScreen('main-screen');
+        }
+        function openModeSelect() { document.getElementById('p1-name-input').value = playerData.name; showScreen('mode-screen'); }
+        function toggleModeOptions() {
+            const mode = document.getElementById('game-mode-select').value;
+            document.getElementById('ai-options').style.display = mode === 'ai' ? 'block' : 'none';
+            document.getElementById('p2-options').style.display = mode === 'pvp' ? 'block' : 'none';
+        }
+        function openCueShop() {
+            const container = document.getElementById('cue-grid-container');
+            container.innerHTML = '';
+            cuesList.forEach(cue => {
+                const isSelected = playerData.equippedCue === cue.id;
+                container.innerHTML += `
+                    <div class="cue-item ${isSelected ? 'selected' : ''}" onclick="selectCue('${cue.id}')">
+                        <div class="cue-preview"><div class="cue-stick-icon" style="background: ${cue.color}; box-shadow: 0 0 8px ${cue.color};"></div></div>
+                        <h4 style="font-size: 15px; margin-bottom: 4px;">${cue.name}</h4>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">${cue.desc}</p>
+                        <span style="font-size: 12px; font-weight: bold; color: ${cue.owned ? (isSelected ? '#f59e0b' : '#10b981') : '#ef4444'}">${isSelected ? 'ĐANG TRANG BỊ' : (cue.owned ? 'ĐÃ SỞ HỮU' : 'CHƯA MỞ KHÓA')}</span>
+                    </div>`;
+            });
+            showScreen('shop-screen');
+        }
+        function selectCue(cueId) { const cue = cuesList.find(c => c.id === cueId); if (cue && cue.owned) { playerData.equippedCue = cueId; saveUserData(); openCueShop(); } }
+        function returnToMenu() { backToMain(); }
+
+        let canvas, ctx;
+        let gameConfig = { mode: 'ai', aiDiff: 'medium', p1Name: 'Player 1', p2Name: 'AI Bot' };
+        let balls = [], pockets = [], cueBall = null;
+        let isAiming = true, aimAngle = 0, currentTurn = 1;
+        let tableBounds = { x: 50, y: 50, width: 800, height: 400 };
+
+        function startGameSession() {
+            gameConfig.mode = document.getElementById('game-mode-select').value;
+            gameConfig.p1Name = document.getElementById('p1-name-input').value || 'Player 1';
+            gameConfig.aiDiff = document.getElementById('ai-difficulty').value;
+            gameConfig.p2Name = gameConfig.mode === 'ai' ? `AI (${gameConfig.aiDiff.toUpperCase()})` : (document.getElementById('p2-name-input').value || 'Player 2');
+            document.getElementById('hud-name-1').innerText = gameConfig.p1Name;
+            document.getElementById('hud-name-2').innerText = gameConfig.p2Name;
+            showScreen('game-screen');
+            initTable(); initBalls();
+            canvas = document.getElementById('poolTable');
+            ctx = canvas.getContext('2d');
+            canvas.onmousemove = handleMouseMove;
+            canvas.onmousedown = handleMouseDown;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function initTable() {
+            pockets = [
+                { x: tableBounds.x, y: tableBounds.y, radius: 22 },
+                { x: tableBounds.x + tableBounds.width / 2, y: tableBounds.y - 4, radius: 20 },
+                { x: tableBounds.x + tableBounds.width, y: tableBounds.y, radius: 22 },
+                { x: tableBounds.x, y: tableBounds.y + tableBounds.height, radius: 22 },
+                { x: tableBounds.x + tableBounds.width / 2, y: tableBounds.y + tableBounds.height + 4, radius: 20 },
+                { x: tableBounds.x + tableBounds.width, y: tableBounds.y + tableBounds.height, radius: 22 }
+            ];
+        }
+
+        function initBalls() {
+            balls = [];
+            cueBall = { x: tableBounds.x + 200, y: tableBounds.y + tableBounds.height / 2, vx: 0, vy: 0, radius: 11, color: '#ffffff', type: 'cue', number: 0, active: true };
+            balls.push(cueBall);
+            let startX = tableBounds.x + tableBounds.width - 250;
+            let startY = tableBounds.y + tableBounds.height / 2;
+            let r = 11;
+            let colors = ['#eab308', '#2563eb', '#dc2626', '#7c3aed', '#000000', '#db2777', '#16a34a', '#9333ea', '#ea580c', '#1e40af', '#991b1b', '#581c87', '#9d174d', '#166534', '#374151'];
+            let index = 0;
+            for (let col = 0; col < 5; col++) {
+                for (let row = 0; row <= col; row++) {
+                    let bx = startX + col * (r * 1.732);
+                    let by = startY + (row - col / 2) * (r * 2);
+                    balls.push({ x: bx, y: by, vx: 0, vy: 0, radius: r, color: colors[index], number: index + 1, type: index === 4 ? 'black' : (index % 2 === 0 ? 'solid' : 'striped'), active: true });
+                    index++;
+                }
+            }
+        }
+
+        let mouseX = 0, mouseY = 0;
+        function handleMouseMove(e) {
+            let rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left; mouseY = e.clientY - rect.top;
+            if (cueBall && cueBall.active && isAiming) { aimAngle = Math.atan2(mouseY - cueBall.y, mouseX - cueBall.x); }
+        }
+
+        function handleMouseDown() { if (isAiming && cueBall && cueBall.active && currentTurn === 1) { executeShot(); } }
+        function executeShot() {
+            if (!isAiming || !cueBall.active) return;
+            let power = document.getElementById('shotPower').value * 0.9;
+            cueBall.vx = Math.cos(aimAngle) * power;
+            cueBall.vy = Math.sin(aimAngle) * power;
+            isAiming = false;
+        }
+
+        function gameLoop() { updatePhysics(); renderGame(); requestAnimationFrame(gameLoop); }
+
+        function updatePhysics() {
+            let moving = false;
+            balls.forEach(ball => {
+                if (!ball.active) return;
+                ball.x += ball.vx; ball.y += ball.vy;
+                ball.vx *= 0.985; ball.vy *= 0.985;
+                if (Math.abs(ball.vx) < 0.05) ball.vx = 0;
+                if (Math.abs(ball.vy) < 0.05) ball.vy = 0;
+                if (ball.vx !== 0 || ball.vy !== 0) moving = true;
+
+                let rb = ball.radius;
+                if (ball.x - rb < tableBounds.x) { ball.x = tableBounds.x + rb; ball.vx *= -1; }
+                if (ball.x + rb > tableBounds.x + tableBounds.width) { ball.x = tableBounds.x + tableBounds.width - rb; ball.vx *= -1; }
+                if (ball.y - rb < tableBounds.y) { ball.y = tableBounds.y + rb; ball.vy *= -1; }
+                if (ball.y + rb > tableBounds.y + tableBounds.height) { ball.y = tableBounds.y + tableBounds.height - rb; ball.vy *= -1; }
+
+                pockets.forEach(p => {
+                    if (Math.hypot(ball.x - p.x, ball.y - p.y) < p.radius) {
+                        if (ball.type === 'cue') {
+                            ball.x = tableBounds.x + 200; ball.y = tableBounds.y + tableBounds.height / 2; ball.vx = 0; ball.vy = 0;
+                        } else {
+                            ball.active = false; ball.x = -100; ball.y = -100; ball.vx = 0; ball.vy = 0;
+                        }
+                    }
+                });
+            });
+
+            for (let i = 0; i < balls.length; i++) {
+                for (let j = i + 1; j < balls.length; j++) {
+                    let b1 = balls[i], b2 = balls[j];
+                    if (!b1.active || !b2.active) continue;
+                    let dx = b2.x - b1.x, dy = b2.y - b1.y;
+                    let dist = Math.hypot(dx, dy);
+                    let minDist = b1.radius + b2.radius;
+                    if (dist < minDist) {
+                        let angle = Math.atan2(dy, dx);
+                        let overlap = 0.5 * (minDist - dist);
+                        b1.x -= overlap * Math.cos(angle); b1.y -= overlap * Math.sin(angle);
+                        b2.x += overlap * Math.cos(angle); b2.y += overlap * Math.sin(angle);
+                        let ax = Math.cos(angle), ay = Math.sin(angle);
+                        let kx = b1.vx - b2.vx, ky = b1.vy - b2.vy;
+                        let p = 2 * (ax * kx + ay * ky) / 2;
+                        b1.vx -= p * ax; b1.vy -= p * ay;
+                        b2.vx += p * ax; b2.vy += p * ay;
+                    }
+                }
+            }
+
+            if (!moving && !isAiming) {
+                isAiming = true;
+                currentTurn = currentTurn === 1 ? 2 : 1;
+                document.getElementById('turn-indicator').innerText = `Lượt: ${currentTurn === 1 ? gameConfig.p1Name : gameConfig.p2Name}`;
+                if (gameConfig.mode === 'ai' && currentTurn === 2) { setTimeout(makeAiShot, 800); }
+            }
+        }
+
+        function makeAiShot() {
+            if (!cueBall.active) return;
+            let targetBall = balls.find(b => b.active && b.type !== 'cue');
+            if (targetBall) {
+                let angle = Math.atan2(targetBall.y - cueBall.y, targetBall.x - cueBall.x) + (Math.random() - 0.5) * (gameConfig.aiDiff === 'easy' ? 0.3 : 0.1);
+                let power = gameConfig.aiDiff === 'easy' ? 6 : (gameConfig.aiDiff === 'medium' ? 10 : 14);
+                cueBall.vx = Math.cos(angle) * power; cueBall.vy = Math.sin(angle) * power;
+                isAiming = false;
+            }
+        }
+
+        function renderGame() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#3b2219'; ctx.fillRect(30, 30, 840, 390);
+            ctx.fillStyle = '#0b4f26'; ctx.fillRect(tableBounds.x, tableBounds.y, tableBounds.width, tableBounds.height);
+
+            pockets.forEach(p => {
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#020617'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#1e293b'; ctx.stroke();
+            });
+
+            if (isAiming && cueBall && cueBall.active && (currentTurn === 1 || gameConfig.mode === 'pvp')) {
+                ctx.beginPath(); ctx.moveTo(cueBall.x, cueBall.y);
+                ctx.lineTo(cueBall.x + Math.cos(aimAngle) * 150, cueBall.y + Math.sin(aimAngle) * 150);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+
+                let activeCueObj = cuesList.find(c => c.id === playerData.equippedCue) || cuesList[0];
+                ctx.save(); ctx.translate(cueBall.x, cueBall.y); ctx.rotate(aimAngle + Math.PI);
+                ctx.fillStyle = activeCueObj.color; ctx.fillRect(25, -4, 180, 8);
+                ctx.fillStyle = '#d97706'; ctx.fillRect(205, -3, 25, 6);
+                ctx.restore();
+            }
+
+            balls.forEach(ball => {
+                if (!ball.active) return;
+                ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fillStyle = ball.color; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = '#000'; ctx.stroke();
+                ctx.beginPath(); ctx.arc(ball.x - 3, ball.y - 3, 3, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; ctx.fill();
+                if (ball.number > 0) {
+                    ctx.fillStyle = ball.number === 8 ? '#f59e0b' : '#ffffff';
+                    ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(ball.number, ball.x, ball.y);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
